@@ -1,0 +1,37 @@
+import pandas as pd
+import requests
+
+# Função para obter informações da API
+def get_additional_info(product_id, token):
+    try:
+        response = requests.get(f'https://api.produtos.com/informacoes/{product_id}', headers={'Authorization': f'Bearer {token}'})
+        response.raise_for_status()
+        data = response.json()
+        return data.get('peso', None), data.get('preco', None), data.get('imposto', None)
+    except requests.exceptions.RequestException as e:
+        return None, None, None
+
+# Carregamento dos arquivos CSV dos fornecedores em um DataFrame único
+def load_data_from_csv(arquivos):
+    return pd.concat([pd.read_csv(arquivo) for arquivo in arquivos])
+
+# Arquivos CSV dos fornecedores
+arquivos = ['fornecedor1.csv', 'fornecedor2.csv', 'fornecedor3.csv', 'fornecedor4.csv']
+
+# Token de autenticação para a API
+token = 'token_chamada_api'
+
+# Carregar dados dos fornecedores e remover duplicatas
+df = load_data_from_csv(arquivos).drop_duplicates()
+
+# Obter informações adicionais da API e criar DataFrame adicional
+additional_info = [get_additional_info(product_id, token) for product_id in df['ID']]
+additional_df = pd.DataFrame(additional_info, columns=['peso', 'preco', 'imposto'])
+
+# Concatenar os DataFrames de informações adicionais ao DataFrame principal
+final_df = pd.concat([df, additional_df], axis=1)
+
+# Salvar o DataFrame consolidado em um novo arquivo CSV
+final_df.to_csv('produtos_final.csv', index=False)
+
+#print("Processo concluído. Arquivo 'produtos_final.csv' criado com sucesso.")
